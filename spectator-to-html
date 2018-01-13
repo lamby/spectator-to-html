@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import jinja2
+import logging
+import optparse
+import requests
+import itertools
+
+from lxml import etree
+from lxml.cssselect import CSSSelector
+
+
+class SpectatorToHTML(object):
+    def __init__(self):
+        self.session = None
+
+    def main(self):
+        parser = optparse.OptionParser(
+            usage='%prog [options] <url> <output.html>',
+        )
+
+        parser.add_option(
+            '--verbosity',
+            dest='verbosity',
+            default=0,
+            type='int',
+            help="Verbosity level; 0=minimal output, 1=normal output, "
+                 "2=verbose output, 3=very verbose output",
+        )
+
+        self.options, args = parser.parse_args()
+
+        if len(args) != 2:
+            parser.error("invalid number of arguments")
+
+        self.options.base_url = args[0]
+        self.options.filename = args[1]
+
+        self.context = {
+            'articles': [],
+        }
+
+        self.setup_logging()
+        self.handle_base()
+        self.output_html()
+
+        return 0
+
+    def handle_base(self):
+        html = self.parse(self.options.base_url)
+
+        self.context['date'] = \
+            CSSSelector('.issue-details__date')(html)[0].text.strip()
+
+        for x in CSSSelector('.term-item a.term-item__title-link')(html):
+            self.handle_article(x.get('href'))
+
+    def handle_article(self, url):
+        html = self.parse(url)
+
+        def text(x):
+            try:
+                return CSSSelector(x)(html)[0].text.strip()
+            except IndexError:
+                return None
+
+        category = text('.article-header .article-header__category a')
+
+        if category in (
+            "Crossword",
+            "Crossword solution",
+            "Competition",
+        ):
+            return
+
+        author = text('.article-header .article-header__author a')
+        if author == "The Spectator":
+            author = ""
+
+        title = text('.article-header h1')
+        title = title.replace("{}: ".format(author), "")
+
+        subtitle = text('.article-header h2')
+
+        if category in (
+            "Letters",
+            "Chess puzzle",
+        ):
+            title = category
+            subtitle = ""
+
+        try:
+            image = CSSSelector('.featured-image img')(html)[0].get('src')
+        except IndexError:
+            image = None
+
+        # Parse/tidy body
+        elem = CSSSelector('.article-body .ev-meter-content-class')(html)[0]
+        etree.strip_tags(elem, 'div', 'iframe', 'script')
+        body = etree.tostring(elem, encoding='unicode')
+        for pat, repl in (
+            (r'\ngoogletag.*', ''),
+            (r'<br/>', ''),
+            (r'<h2>', '<h5>'),
+            (r'</h2>', '</h5>'),
+            (r'<h3>', '<h6>'),
+            (r'</h3>', '</h6>'),
+        ):
+            body = re.sub(pat, repl, body)
+
+        data = {
+            'title': title,
+            'subtitle': subtitle,
+            'author': author,
+
+            'url': url,
+            'idx': len(self.context['articles']),
+
+            'body': body,
+            'image': image,
+            'category': category,
+        }
+
+        self.context['articles'].append(data)
+
+    def output_html(self):
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(os.path.dirname(__file__))
+        )
+
+        self.context['grouped'] = [(x, list(y)) for x, y in itertools.groupby(
+            self.context['articles'],
+            lambda x: x['category'],
+        )]
+
+        html = env.get_template('spectator-to-html.template').render(
+            **self.context
+        )
+
+        with open(self.options.filename, 'w') as f:
+            print(html, file=f)
+
+    def parse(self, *args, **kwargs):
+        return etree.HTML(self.get(*args, **kwargs))
+
+    def get(self, url):
+        if self.session is None:
+            self.session = requests.Session()
+
+        response = self.session.get(url, headers={'User-agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+
+        return response.text
+
+    def setup_logging(self):
+        self.log = logging.getLogger()
+        self.log.setLevel({
+            0: logging.WARNING,
+            1: logging.INFO,
+            2: logging.DEBUG,
+        }[self.options.verbosity])
+
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(
+            logging.Formatter('%(asctime).19s %(levelname).1s %(message)s')
+        )
+        self.log.addHandler(handler)
+
+
+if __name__ == '__main__':
+    sys.exit(SpectatorToHTML().main())
