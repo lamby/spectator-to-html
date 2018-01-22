@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import jinja2
+import shutil
+import logging
+import optparse
+import requests
+import itertools
+import tempfile
+import subprocess
+
+from lxml import etree
+from lxml.cssselect import CSSSelector
+
+
+class SpectatorToMobi(object):
+    def __init__(self):
+        self.session = None
+
+    def main(self):
+        parser = optparse.OptionParser(
+            usage='%prog [options] <url> <output.mobi>',
+        )
+
+        parser.add_option(
+            '--verbosity',
+            dest='verbosity',
+            default=0,
+            type='int',
+            help="Verbosity level; 0=minimal output, 1=normal output, "
+                 "2=verbose output, 3=very verbose output",
+        )
+
+        self.options, args = parser.parse_args()
+
+        if len(args) != 2:
+            parser.error("invalid number of arguments")
+
+        self.options.base_url = args[0]
+        self.options.filename = args[1]
+
+        self.context = {
+            'articles': [],
+        }
+
+        self.setup_logging()
+        self.handle_base()
+
+        with tempfile.TemporaryDirectory() as t:
+            self.generate_mobi(t)
+
+        return 0
+
+    def handle_base(self):
+        html = self.parse(self.options.base_url)
+
+        self.context['date'] = \
+            CSSSelector('.issue-details__date')(html)[0].text.strip()
+
+        self.context['cover'] = \
+            CSSSelector('a.issue-details__cover-link')(html)[0].get('href')
+
+        for x in CSSSelector('.term-item a.term-item__title-link')(html):
+            self.handle_article(x.get('href'))
+
+    def handle_article(self, url):
+        html = self.parse(url)
+
+        def text(x):
+            try:
+                return CSSSelector(x)(html)[0].text.strip()
+            except IndexError:
+                return None
+
+        category = text('.article-header .article-header__category a')
+
+        if category in (
+            "Crossword",
+            "Crossword solution",
+            "Competition",
+        ):
+            return
+
+        author = text('.article-header .article-header__author a')
+        if author == "The Spectator":
+            author = ""
+
+        title = text('.article-header h1')
+        title = title.replace("{}: ".format(author), "")
+
+        subtitle = text('.article-header h2')
+
+        if category in (
+            "Letters",
+            "Chess puzzle",
+        ):
+            title = category
+            subtitle = ""
+
+        try:
+            image = CSSSelector('.featured-image img')(html)[0].get('src')
+        except IndexError:
+            image = None
+
+        # Parse/tidy body
+        elem = CSSSelector('.article-body .ev-meter-content-class')(html)[0]
+        etree.strip_tags(elem, 'div', 'iframe', 'script', 'v-email-newsletter')
+
+        for x in elem.findall('img'):
+            print(x)
+
+        body = etree.tostring(elem, encoding='unicode')
+
+        for pat, repl in (
+            (r'\ngoogletag.*', ''),
+            (r'<p/>', ''),
+            (r'<br/>', ''),
+            (r'<h2>', '<h5>'),
+            (r'</h2>', '</h5>'),
+            (r'<h3>', '<h6>'),
+            (r'</h3>', '</h6>'),
+        ):
+            body = re.sub(pat, repl, body)
+
+        data = {
+            'title': title,
+            'subtitle': subtitle,
+            'author': author,
+
+            'url': url,
+            'idx': len(self.context['articles']),
+
+            'body': body,
+            'image': image,
+            'category': category,
+        }
+
+        self.context['articles'].append(data)
+
+    def generate_mobi(self, tempdir):
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+
+        self.context['tempdir'] = tempdir
+        self.context['grouped'] = [(x, list(y)) for x, y in itertools.groupby(
+            self.context['articles'],
+            lambda x: x['category'],
+        )]
+
+        self.save_url_to(
+            self.context['cover'],
+            os.path.join(tempdir, 'cover.jpg'),
+        )
+
+        for x in ('index.html', 'toc.ncx', 'style.css'):
+            val = env.get_template(x).render(**self.context)
+            with open(os.path.join(tempdir, x), 'w') as f:
+                f.write(val)
+
+        # Download article images
+        for x in self.context['articles']:
+            if x['image'] is None:
+                continue
+
+            target = os.path.join(tempdir, '{}.jpg'.format(x['idx']))
+            self.save_url_to(x['image'], target)
+
+        subprocess.call((
+            'kindlegen/kindlegen',
+            '-verbose',
+            os.path.join(tempdir, 'index.html'),
+        ))
+
+        shutil.move(os.path.join(tempdir, 'index.mobi'), self.options.filename)
+
+    def parse(self, *args, **kwargs):
+        return etree.HTML(self.get(*args, **kwargs).text)
+
+    def get(self, url):
+        if self.session is None:
+            self.session = requests.Session()
+
+        response = self.session.get(url, headers={'User-agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+
+        return response
+
+    def save_url_to(self, url, target):
+        with open(target, 'wb') as f:
+            for x in self.get(url).iter_content(chunk_size=128):
+                f.write(x)
+
+    def setup_logging(self):
+        self.log = logging.getLogger()
+        self.log.setLevel({
+            0: logging.WARNING,
+            1: logging.INFO,
+            2: logging.DEBUG,
+        }[self.options.verbosity])
+
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(
+            logging.Formatter('%(asctime).19s %(levelname).1s %(message)s')
+        )
+        self.log.addHandler(handler)
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(SpectatorToMobi().main())
+    except KeyboardInterrupt:
+        sys.exit(2)
