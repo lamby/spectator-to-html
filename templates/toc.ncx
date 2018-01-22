@@ -1,35 +1,29 @@
-<?xml version="1.0"?>
-<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" 
- "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
-<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-<head>
-</head>
-  <docTitle>
-    <text>The Spectator ({{ date }})</text>
-  </docTitle>
-
-  <navMap>
-    <navPoint id="toc" playOrder="0">
-      <navLabel>
-        <text>
-          Table of Contents
-        </text>
-      </navLabel>
-      <content src="index.html#toc" />
-    </navPoint>
-
-    {% for article in articles %}
-    <navPoint id="ch{{ article.idx }}" playOrder="{{ article.idx }}">
-      <navLabel>
-        <text>
-          {{ article.title }}
+<nav epub:type="toc">
+  <ol>
+    {% for key, group in grouped %}
+    <li>
+      {% if group|length == 1 %}
+        {{ key }}:
+        {% for article in group %}
+          <a href="index.html#ch{{ article.idx }}">{{ article.title }}</a>
           {% if article.author and article.author != article.category %}
             ({{ article.author }})
           {% endif %}
-        </text>
-      </navLabel>
-      <content src="index.html#ch{{ article.idx }}" />
-    </navPoint>
+        {% endfor %}
+      {% else %}
+        {{ key }}
+        <ol>
+          {% for article in group %}
+          <li>
+            <a href="index.html#ch{{ article.idx }}">{{ article.title }}</a>
+            {% if article.author %}
+              ({{ article.author }})
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+        {% endif %}
+      </li>
     {% endfor %}
-  </navMap>
-</ncx>
+  </ol>
+</nav>
