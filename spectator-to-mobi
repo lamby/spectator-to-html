@@ -71,9 +71,11 @@ class SpectatorToMobi(object):
 
         def text(x):
             try:
-                return CSSSelector(x)(html)[0].text.strip()
+                elem = CSSSelector(x)(html)[0]
             except IndexError:
                 return None
+
+            return ''.join(elem.itertext()).strip()
 
         category = text('.article-header .article-header__category a')
 
