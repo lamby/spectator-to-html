@@ -13,7 +13,7 @@
       {% for key, group in grouped %}
       <li>
         {% if group|length == 1 %}
-          {{ key }}:
+          {% if key != group[0].title %}{{ key }}:{% endif %}
           {% for article in group %}
             <a href="#ch{{ article.idx }}">{{ article.title }}</a>
             {% if article.author and article.author != article.category %}
