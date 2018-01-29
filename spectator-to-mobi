@@ -95,6 +95,15 @@ class SpectatorToMobi(object):
 
         subtitle = text('.article-header h2')
 
+        for x in (
+            "Portrait of the Week",
+            "Barometer",
+        ):
+            if subtitle is not None and "{}: ".format(x) in subtitle:
+                title = x
+                subtitle = ""
+                category = x
+
         if category in (
             "Letters",
             "Chess puzzle",
