@@ -50,7 +50,7 @@ class SpectatorToMobi(object):
         self.handle_base()
 
         with tempfile.TemporaryDirectory() as t:
-            self.generate_mobi(t)
+            self.generate_mobi('/home/lamby/temp/cdt.20180129153947.qdMWe3T7Ca')
 
         return 0
 
@@ -128,7 +128,7 @@ class SpectatorToMobi(object):
         for pat, repl in (
             (r'\ngoogletag.*', ''),
             (r'<p/>', ''),
-            (r'<br/>', ''),
+            (r'<br/>(?!<em>)', ''),
             (r'<h2>', '<h5>'),
             (r'</h2>', '</h5>'),
             (r'<h3>', '<h6>'),
