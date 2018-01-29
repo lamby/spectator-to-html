@@ -133,6 +133,7 @@ class SpectatorToMobi(object):
             (r'</h2>', '</h5>'),
             (r'<h3>', '<h6>'),
             (r'</h3>', '</h6>'),
+            (r'<p><strong>.*Spectator Podcast.</strong></p>', ''),
         ):
             body = re.sub(pat, repl, body)
 
