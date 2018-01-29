@@ -75,7 +75,7 @@ class SpectatorToMobi(object):
             except IndexError:
                 return None
 
-            return ''.join(elem.itertext()).strip()
+            return ' '.join(elem.itertext()).strip()
 
         category = text('.article-header .article-header__category a')
 
