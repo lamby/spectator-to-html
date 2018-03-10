@@ -116,9 +116,6 @@ class SpectatorToMobi(object):
         elem = CSSSelector('.article-body .ev-meter-content-class')(html)[0]
         etree.strip_tags(elem, 'div', 'iframe', 'script', 'v-email-newsletter')
 
-        for x in elem.findall('img'):
-            print(x)
-
         body = etree.tostring(elem, encoding='unicode')
 
         for pat, repl in (
