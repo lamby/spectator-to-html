@@ -17,7 +17,8 @@ from lxml.cssselect import CSSSelector
 
 
 @click.command()
-@click.argument('filename')
+@click.argument('filename',
+                default=None)
 @click.argument('url',
                 default='https://www.spectator.co.uk/magazine/')
 @click.option('--verbosity',
@@ -181,7 +182,13 @@ class SpectatorToMobi(object):
             os.path.join(tempdir, 'index.html'),
         ))
 
-        shutil.move(os.path.join(tempdir, 'index.mobi'), self.filename)
+        target = self.filename
+        if self.filename is None:
+            target = 'The_Spectator_{}.mobi'.format(
+                self.context['date'].replace(' ', '_'),
+            )
+
+        shutil.move(os.path.join(tempdir, 'index.mobi'), target)
 
     def parse(self, *args, **kwargs):
         return etree.HTML(self.get(*args, **kwargs).text)
