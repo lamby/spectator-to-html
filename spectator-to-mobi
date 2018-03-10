@@ -50,7 +50,7 @@ class SpectatorToMobi(object):
         self.handle_base()
 
         with tempfile.TemporaryDirectory() as t:
-            self.generate_mobi('/home/lamby/temp/cdt.20180129153947.qdMWe3T7Ca')
+            self.generate_mobi(t)
 
         return 0
 
