@@ -49,6 +49,8 @@ class SpectatorToMobi(object):
         return 0
 
     def handle_base(self):
+        self.log.info("Starting conversion of %s", self.base_url)
+
         html = self.parse(self.base_url)
 
         self.context['date'] = \
@@ -144,6 +146,8 @@ class SpectatorToMobi(object):
         self.context['articles'].append(data)
 
     def generate_mobi(self, tempdir):
+        self.log.info("Generating .mobi")
+
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
@@ -187,6 +191,8 @@ class SpectatorToMobi(object):
             target = 'The_Spectator_{}.mobi'.format(
                 self.context['date'].replace(' ', '_'),
             )
+
+        self.log.info("Saving output to %s", target)
 
         shutil.move(os.path.join(tempdir, 'index.mobi'), target)
 
