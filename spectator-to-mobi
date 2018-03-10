@@ -171,11 +171,16 @@ class SpectatorToMobi(object):
             target = os.path.join(tempdir, '{}.jpg'.format(x['idx']))
             self.save_url_to(x['image'], target)
 
+        # Hide kindlegen output by default
+        stdout, stderr = subprocess.PIPE, subprocess.PIPE
+        if self.verbosity >= 2:
+            stdout, stderr = None, None
+
         subprocess.call((
             'kindlegen/kindlegen',
             '-verbose',
             os.path.join(tempdir, 'index.html'),
-        ))
+        ), stdout=stdout, stderr=stderr)
 
         target = self.filename
         if not self.filename:
