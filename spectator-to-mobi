@@ -18,8 +18,7 @@ from lxml.cssselect import CSSSelector
 
 @click.command()
 @click.argument('filename', default='')
-@click.argument('url',
-                default='https://www.spectator.co.uk/magazine/')
+@click.argument('url', default='https://www.spectator.co.uk/magazine/')
 @click.option('--verbosity',
               type=int,
               default=1,
