@@ -22,7 +22,7 @@ from lxml.cssselect import CSSSelector
                 default='https://www.spectator.co.uk/magazine/')
 @click.option('--verbosity',
               type=int,
-              default=2,
+              default=1,
               help="Verbosity level; 0=minimal output, 1=normal output, "
                    "2=verbose output, 3=very verbose output")
 def main(*args, **kwargs):
