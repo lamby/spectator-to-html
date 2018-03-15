@@ -165,7 +165,7 @@ class SpectatorToMobi(object):
             os.path.join(tempdir, 'cover.jpg'),
         )
 
-        for x in ('index.html', 'toc.ncx', 'style.css'):
+        for x in ('index.html', 'toc.html', 'style.css'):
             val = env.get_template(x).render(**self.context)
             with open(os.path.join(tempdir, x), 'w') as f:
                 f.write(val)
