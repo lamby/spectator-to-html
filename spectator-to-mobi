@@ -100,6 +100,12 @@ class SpectatorToMobi(object):
                 subtitle = ""
                 category = x
 
+        # If subtitle is missing a full-stop, append one. We match for a
+        # lower-case letter, to avoid whack-a-mole with various other
+        # punctuation.
+        if re.search(r'[a-z]$', subtitle):
+            subtitle = "{}.".format(subtitle)
+
         if category in (
             "Letters",
             "Chess puzzle",
