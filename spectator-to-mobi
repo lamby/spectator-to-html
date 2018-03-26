@@ -71,6 +71,13 @@ class SpectatorToMobi(object):
         for x in CSSSelector('.term-item a.term-item__title-link')(html):
             self.handle_article(x.get('href'))
 
+        # Pull to front
+        for idx, x in enumerate(list(self.context['articles'])):
+            if x['category'] == "Portrait of the week":
+                self.context['articles'].pop(idx)
+                self.context['articles'].insert(0, x)
+                break
+
     def handle_article(self, url):
         html = self.parse(url)
 
