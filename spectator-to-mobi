@@ -144,7 +144,6 @@ class SpectatorToMobi(object):
             (r'\u00a0', '&nbsp;'),
             (r'\ngoogletag.*', ''),
             (r'<p/>', ''),
-            (r'<br/>(?!<em>)', ''),
             (r'<h2>', '<h5>'),
             (r'</h2>', '</h5>'),
             (r'<h3>', '<h6>'),
