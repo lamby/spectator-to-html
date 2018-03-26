@@ -141,6 +141,7 @@ class SpectatorToMobi(object):
         body = etree.tostring(elem, encoding='unicode')
 
         for pat, repl in (
+            (r'\u00a0', '&nbsp;'),
             (r'\ngoogletag.*', ''),
             (r'<p/>', ''),
             (r'<br/>(?!<em>)', ''),
