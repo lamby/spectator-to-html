@@ -116,6 +116,9 @@ class SpectatorToMobi(object):
                 subtitle = ""
                 category = x
 
+        if category == "Leading article":
+            author = "The Spectator"
+
         # If subtitle is missing a full-stop, append one. We match for a
         # lower-case letter, to avoid whack-a-mole with various other
         # punctuation.
