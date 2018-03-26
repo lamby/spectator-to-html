@@ -119,6 +119,14 @@ class SpectatorToMobi(object):
         if category == "Leading article":
             author = "The Spectator"
 
+        for x, y in (
+            ("Leading book review", "Books"),
+            ("Battle for Britain", "The Battle for Britain"),
+            ("Notes on...", "Notes on"),
+        ):
+            if category == x:
+                category = y
+
         # If subtitle is missing a full-stop, append one. We match for a
         # lower-case letter, to avoid whack-a-mole with various other
         # punctuation.
