@@ -19,6 +19,8 @@ from lxml.cssselect import CSSSelector
 @click.command()
 @click.argument('url', default='https://www.spectator.co.uk/magazine/')
 @click.argument('filename', default='')
+@click.option('--keep-html', is_flag=True, default=False,
+              help="Keep (and print) the HTML sources directory")
 @click.option('--verbosity',
               type=int,
               default=1,
@@ -29,10 +31,11 @@ def main(*args, **kwargs):
 
 
 class SpectatorToMobi(object):
-    def __init__(self, url, filename, verbosity):
+    def __init__(self, url, filename, keep_html, verbosity):
         self.session = None
         self.base_url = url
         self.filename = filename
+        self.keep_html = keep_html
         self.verbosity = verbosity
 
     def main(self):
@@ -43,8 +46,13 @@ class SpectatorToMobi(object):
         self.setup_logging()
         self.handle_base()
 
-        with tempfile.TemporaryDirectory() as t:
+        t = tempfile.mkdtemp()
+
+        try:
             self.generate_mobi(t)
+        finally:
+            if not self.keep_html:
+                shutil.rmtree(t, ignore_errors=True)
 
         return 0
 
@@ -152,7 +160,7 @@ class SpectatorToMobi(object):
         self.context['articles'].append(data)
 
     def generate_mobi(self, tempdir):
-        self.log.info("Generating .mobi")
+        self.log.info("Generating .mobi in %s", tempdir)
 
         assert self.context['articles'], \
             "No articles downloaded; please check {}".format(self.base_url)
