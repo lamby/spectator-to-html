@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import json
 import click
 import jinja2
 import shutil
@@ -161,6 +162,9 @@ class SpectatorToMobi(object):
 
     def generate_mobi(self, tempdir):
         self.log.info("Generating .mobi in %s", tempdir)
+
+        with open(os.path.join(tempdir, 'context.json'), 'w') as f:
+            json.dump(self.context, f, indent=2)
 
         assert self.context['articles'], \
             "No articles downloaded; please check {}".format(self.base_url)
