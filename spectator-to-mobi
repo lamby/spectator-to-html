@@ -108,6 +108,8 @@ class SpectatorToMobi(object):
         # If the title starts with the author's name or category, strip it out.
         title = title.replace("{}: ".format(author), "")
         title = title.replace("{}: ".format(category), "")
+
+        # Remove some subtitles by pushing them into the title
         for x in (
             "Portrait of the Week",
             "Barometer",
@@ -117,6 +119,7 @@ class SpectatorToMobi(object):
                 subtitle = ""
                 category = x
 
+        # Fixup the leading article author
         if category == "Leading article":
             author = "The Spectator"
 
