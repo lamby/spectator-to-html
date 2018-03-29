@@ -103,10 +103,11 @@ class SpectatorToMobi(object):
             author = ""
 
         title = text('.article-header h1')
-        title = title.replace("{}: ".format(author), "")
-
         subtitle = text('.article-header h2')
 
+        # If the title starts with the author's name or category, strip it out.
+        title = title.replace("{}: ".format(author), "")
+        title = title.replace("{}: ".format(category), "")
         for x in (
             "Portrait of the Week",
             "Barometer",
