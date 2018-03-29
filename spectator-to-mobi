@@ -89,6 +89,9 @@ class SpectatorToMobi(object):
 
             return ' '.join(elem.itertext()).strip()
 
+        author = text('.article-header .article-header__author a')
+        title = text('.article-header h1')
+        subtitle = text('.article-header h2')
         category = text('.article-header .article-header__category a')
 
         if category in (
@@ -98,14 +101,7 @@ class SpectatorToMobi(object):
         ):
             return
 
-        author = text('.article-header .article-header__author a')
-        if author == "The Spectator":
-            author = ""
-
-        title = text('.article-header h1')
-        subtitle = text('.article-header h2')
-
-        # If the title starts with the author's name or category, strip it out.
+        # If the title starts with the author's name, strip it out.
         title = title.replace("{}: ".format(author), "")
 
         # Remove some subtitles by pushing them into the title
@@ -117,6 +113,9 @@ class SpectatorToMobi(object):
                 title = x
                 subtitle = ""
                 category = x
+
+        if author == "The Spectator":
+            author = ""
 
         # Fixup the leading article author
         if category == "Leading article":
