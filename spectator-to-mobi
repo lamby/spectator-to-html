@@ -107,7 +107,6 @@ class SpectatorToMobi(object):
 
         # If the title starts with the author's name or category, strip it out.
         title = title.replace("{}: ".format(author), "")
-        title = title.replace("{}: ".format(category), "")
 
         # Remove some subtitles by pushing them into the title
         for x in (
@@ -141,6 +140,7 @@ class SpectatorToMobi(object):
         if category in (
             "Letters",
             "Chess puzzle",
+            "Dear Mary",
         ):
             title = category
             subtitle = ""
