@@ -119,6 +119,7 @@ class SpectatorToMobi(object):
         if category == "Leading article":
             author = "The Spectator"
 
+        # Recategorise some things
         for x, y in (
             ("Leading book review", "Books"),
             ("Battle for Britain", "The Battle for Britain"),
