@@ -141,7 +141,6 @@ class SpectatorToMobi(object):
 
         if category in (
             "Letters",
-            "Chess puzzle",
             "Dear Mary",
         ):
             title = category
