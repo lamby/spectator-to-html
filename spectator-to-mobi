@@ -125,6 +125,7 @@ class SpectatorToMobi(object):
 
         # Recategorise some things
         for x, y in (
+            ("Lead book review", "Books"),
             ("Leading book review", "Books"),
             ("Battle for Britain", "The Battle for Britain"),
             ("Notes on...", "Notes on"),
