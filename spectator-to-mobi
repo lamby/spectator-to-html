@@ -142,6 +142,7 @@ class SpectatorToMobi(object):
         if category in (
             "Letters",
             "Dear Mary",
+            "Portrait of the week",
         ):
             title = category
             subtitle = ""
