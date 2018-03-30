@@ -98,6 +98,8 @@ class SpectatorToMobi(object):
             "Crossword",
             "Crossword solution",
             "Competition",
+            "Chess puzzle",
+            "Spectator Wine",
         ):
             return
 
