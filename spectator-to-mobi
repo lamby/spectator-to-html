@@ -171,7 +171,7 @@ class SpectatorToMobi(object):
             body = re.sub(pat, repl, body)
 
         if category == "Portrait of the week":
-            body = re.sub(r'(&nbsp;){3,}\s*[A-Z]{3}', '', body)
+            body = re.sub(r'\.\s*[A-Z]{3}', '.', body)
 
         data = {
             'title': title,
