@@ -9,8 +9,8 @@ import jinja2
 import shutil
 import logging
 import requests
-import itertools
 import tempfile
+import itertools
 import subprocess
 
 from lxml import etree
