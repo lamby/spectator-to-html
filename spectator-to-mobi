@@ -136,6 +136,7 @@ class SpectatorToMobi(object):
         for x, y in (
             ("Lead book review", "Books"),
             ("Leading book review", "Books"),
+            ("From The Archives", "From the Archives"),
             ("Battle for Britain", "The Battle for Britain"),
             ("Notes on...", "Notes on"),
         ):
