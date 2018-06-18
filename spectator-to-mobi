@@ -33,7 +33,7 @@ def main(*args, **kwargs):
 
 class SpectatorToMobi(object):
     def __init__(self, url, filename, keep_html, verbosity):
-        self.session = None
+        self.session = requests.Session()
         self.base_url = url
         self.filename = filename
         self.keep_html = keep_html
@@ -249,9 +249,6 @@ class SpectatorToMobi(object):
         return etree.HTML(self.get(*args, **kwargs).text)
 
     def get(self, url):
-        if self.session is None:
-            self.session = requests.Session()
-
         response = self.session.get(url, headers={'User-agent': 'Mozilla/5.0'})
         response.raise_for_status()
 
