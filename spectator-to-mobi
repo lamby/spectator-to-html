@@ -19,6 +19,7 @@ from lxml import etree
 from lxml.cssselect import CSSSelector
 from xdg.BaseDirectory import save_cache_path
 
+re_widont_html = re.compile(r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)', re.IGNORECASE)
 re_filename_safe = re.compile(r'\w')
 
 
@@ -182,6 +183,10 @@ class SpectatorToMobi(object):
 
         if category == "Portrait of the week":
             body = re.sub(r'\.\s*[A-Z]{3}', '.', body)
+
+        def cb_widont(m):
+            return '{}&nbsp;{}{}'.format(*m.groups())
+        body = re_widont_html.sub(cb_widont, body)
 
         data = {
             'title': title,
