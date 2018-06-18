@@ -55,7 +55,7 @@ class SpectatorToMobi(object):
         self.setup_logging()
         self.handle_base()
 
-        t = tempfile.mkdtemp()
+        t = tempfile.mkdtemp(prefix='spectator-to-mobi-')
 
         try:
             self.generate_mobi(t)
