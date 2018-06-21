@@ -68,9 +68,6 @@ class SpectatorToMobi(object):
             for y in xs.split(','):
                 self.exclude.discard(y)
 
-        print(repr(self.exclude))
-        1/0
-
     def main(self):
         self.context = {
             'articles': [],
