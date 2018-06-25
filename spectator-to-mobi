@@ -178,11 +178,21 @@ class SpectatorToMobi(object):
         except IndexError:
             image = None
 
-        # Parse/tidy body
+        body = ""
+
+        # Add metadata
+        sel = CSSSelector('.article-body .arts-meta, .article-body .book-meta')(html)
+        if sel:
+            body += '<br/><br/>'
+            for elem in sel:
+                body += etree.tostring(elem, encoding='unicode')
+            body += '<br/>'
+
+        # Parse/tidy content
         elem = CSSSelector('.article-body .ev-meter-content-class')(html)[0]
         etree.strip_tags(elem, 'div', 'iframe', 'script', 'v-email-newsletter')
 
-        body = etree.tostring(elem, encoding='unicode')
+        body += etree.tostring(elem, encoding='unicode')
 
         for pat, repl in (
             (r'\u00a0', '&nbsp;'),
