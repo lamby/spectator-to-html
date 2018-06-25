@@ -82,7 +82,7 @@ class SpectatorToMobi(object):
             self.generate_mobi(t)
         finally:
             if self.keep_html:
-                self.log.info("Keeping HTML in %s", t)
+                self.log.info("Keeping HTML in %s/index.html", t)
             else:
                 shutil.rmtree(t, ignore_errors=True)
 
