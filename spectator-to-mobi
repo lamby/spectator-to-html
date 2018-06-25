@@ -207,7 +207,7 @@ class SpectatorToMobi(object):
             body = re.sub(pat, repl, body)
 
         if category == "Portrait of the week":
-            body = re.sub(r'\.\s*[A-Z]{3}', '.', body)
+            body = re.sub(r'\s*(?:&nbsp;)*\s*[A-Z]{3}</p>', '</p>', body)
 
         def cb_widont(m):
             return '{}&nbsp;{}{}'.format(*m.groups())
