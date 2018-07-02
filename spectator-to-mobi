@@ -125,9 +125,6 @@ class SpectatorToMobi(object):
         subtitle = text('.article-header h2')
         category = text('.article-header .article-header__category a')
 
-        if category in self.exclude:
-            return
-
         # If the title starts with the author's name, strip it out.
         title = title.replace("{}: ".format(author), "")
 
@@ -158,6 +155,9 @@ class SpectatorToMobi(object):
         ):
             if category == x:
                 category = y
+
+        if category in self.exclude:
+            return
 
         # If subtitle is missing a full-stop, append one. We match for a
         # lower-case letter, to avoid whack-a-mole with various other
