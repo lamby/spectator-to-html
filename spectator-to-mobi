@@ -203,6 +203,7 @@ class SpectatorToMobi(object):
             (r'<h3>', '<h6>'),
             (r'</h3>', '</h6>'),
             (r'<p><strong>.*Spectator Podcast.</strong></p>', ''),
+            (r'<p>.*https://www.spectator.co.uk/subscription.*</p>', ''),
             (r'<!--.*MidArticle_Banner.*-->\s*<br/>', ''),
         ):
             body = re.sub(pat, repl, body)
