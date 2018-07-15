@@ -277,15 +277,14 @@ class SpectatorToMobi(object):
             os.path.join(tempdir, 'index.html'),
         ), stdout=stdout, stderr=stderr)
 
-        target = self.filename
         if not self.filename:
-            target = 'The_Spectator_{}.mobi'.format(
+            self.filename = 'The_Spectator_{}.mobi'.format(
                 self.context['date'].replace(' ', '_'),
             )
 
-        self.log.info("Saving output to %s", target)
+        self.log.info("Saving output to %s", self.filename)
 
-        shutil.move(os.path.join(tempdir, 'index.mobi'), target)
+        shutil.move(os.path.join(tempdir, 'index.mobi'), self.filename)
 
     def parse(self, *args, **kwargs):
         return etree.HTML(self.get(*args, **kwargs).text)
