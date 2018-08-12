@@ -34,7 +34,8 @@ DEFAULT_EXCLUDE = {
 
 @click.command()
 @click.argument('url', default='https://www.spectator.co.uk/magazine/')
-@click.argument('filename', default='')
+@click.option('--filename', default='',
+              help="target filename (default: auto-generated)")
 @click.option('--keep-html', is_flag=True, default=False,
               help="Keep (and print) the HTML sources directory")
 @click.option('--include', multiple=True,
