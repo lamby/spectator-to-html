@@ -48,7 +48,7 @@
     <mbp:pagebreak />
 
     <h2 id="ch{{ article.idx }}">
-      {% if article.title != article.category and article.author != article.category %}{{ article.category }}: {% endif %}<a href="{{ article.url }}">{{ article.title }}</a>
+      {% if article.title != article.category and article.author != article.category %}{{ article.category }}: {% endif %}{{ article.title }} <a href="{{ article.url }}">&sect;</a>
     </h2>
 
     {% if article.subtitle %}
