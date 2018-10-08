@@ -69,6 +69,9 @@ class SpectatorToMobi(object):
             for y in xs.split(','):
                 self.exclude.discard(y)
 
+        # Normalise to lower-case
+        self.exclude = {x.lower() for x in self.exclude}
+
     def main(self):
         self.context = {
             'articles': [],
@@ -157,7 +160,7 @@ class SpectatorToMobi(object):
             if category == x:
                 category = y
 
-        if category in self.exclude:
+        if category.lower() in self.exclude:
             return
 
         # If subtitle is missing a full-stop, append one. We match for a
