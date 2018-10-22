@@ -299,7 +299,16 @@ class SpectatorToMobi(object):
         shutil.move(os.path.join(tempdir, 'index.mobi'), self.filename)
 
     def parse(self, *args, **kwargs):
-        return etree.HTML(self.get(*args, **kwargs).text)
+        body = self.get(*args, **kwargs).text
+
+        for pat, repl in (
+            (r'\n', 'NEWLINE'),
+            (r'<div class="middle-promo">.+?<div class="sub-content-promo big-bottom">.+?</div>.+?</div>.+?</div>', ''),
+            (r'NEWLINE', '\n'),
+        ):
+            body = re.sub(pat, repl, body)
+
+        return etree.HTML(body)
 
     def get(self, url):
         filename = os.path.join(
