@@ -205,6 +205,8 @@ class SpectatorToMobi(object):
         for pat, repl in (
             (r'\u00a0', '&nbsp;'),
             (r'\ngoogletag.*', ''),
+            (r'\u2019', '\''),
+            (r'\u2018', '\''),
             (r'<p/>', ''),
             (r'<h2>', '<h5>'),
             (r'</h2>', '</h5>'),
