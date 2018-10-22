@@ -177,6 +177,10 @@ class SpectatorToMobi(object):
             title = category
             subtitle = ""
 
+        # Rewrite title of eg. "Notes on X" to "X" if the category is "Notes of"
+        if title.startswith('{} '.format(category)):
+            title = title[len(category) + 1:]
+
         try:
             image = CSSSelector('.featured-image img')(html)[0].get('src')
         except IndexError:
