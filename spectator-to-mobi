@@ -24,6 +24,7 @@ re_filename_safe = re.compile(r'\w')
 
 DEFAULT_EXCLUDE = {
     "Christmas Crossword",
+    "Christmas Quiz Questions",
     "Crossword",
     "Crossword solution",
     "Competition",
