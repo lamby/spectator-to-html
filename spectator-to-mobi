@@ -23,6 +23,7 @@ re_widont_html = re.compile(r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote
 re_filename_safe = re.compile(r'\w')
 
 DEFAULT_EXCLUDE = {
+    "Christmas Crossword",
     "Crossword",
     "Crossword solution",
     "Competition",
