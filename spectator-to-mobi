@@ -213,6 +213,7 @@ class SpectatorToMobi(object):
             (r'</h2>', '</h5>'),
             (r'<h3>', '<h6>'),
             (r'</h3>', '</h6>'),
+            (r'<p><(?:i|em)>On the Spectator Podcast, .*</p>', ''),
             (r'<p><strong>.*Spectator Podcast.</strong></p>', ''),
             (r'<p>.*https://www.spectator.co.uk/subscription.*</p>', ''),
             (r'<!--.*MidArticle_Banner.*-->\s*<br/>', ''),
