@@ -196,6 +196,7 @@ class SpectatorToMobi(object):
             body += '<br/><br/>'
             for elem in sel:
                 body += etree.tostring(elem, encoding='unicode')
+                elem.getparent().remove(elem)
             body += '<br/>'
 
         # Parse/tidy content
