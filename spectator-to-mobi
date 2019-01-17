@@ -25,12 +25,13 @@ re_filename_safe = re.compile(r'\w')
 DEFAULT_EXCLUDE = {
     "Christmas Crossword",
     "Christmas Quiz Questions",
+    "Christmas crossword solution",
     "Crossword",
     "Crossword solution",
     "Competition",
     "Chess puzzle",
-    "Spectator Wine",
     "Coffee House",
+    "The Best of Coffee House",
 }
 
 
