@@ -202,7 +202,7 @@ class SpectatorToMobi(object):
             body += '<br/>'
 
         # Parse/tidy content
-        for elem in CSSSelector('.article-body p')(html):
+        for elem in CSSSelector('.article-body p, .article-body table, .article-body h2')(html):
             etree.strip_tags(elem, 'div', 'iframe', 'script', 'v-email-newsletter')
             body += etree.tostring(elem, encoding='unicode')
 
