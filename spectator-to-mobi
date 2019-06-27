@@ -31,6 +31,7 @@ DEFAULT_EXCLUDE = {
     "Competition",
     "Chess puzzle",
     "Coffee House",
+    "Economic Disruptor Award",
     "The Best of Coffee House",
 }
 
