@@ -67,7 +67,7 @@ def main(*args, **kwargs):
     SpectatorToMobi(*args, **kwargs).main()
 
 
-class SpectatorToMobi(object):
+class SpectatorToMobi:
     def __init__(self, url, filename, keep_html, include, exclude, verbosity):
         self.epoch = time.time() - 3600
         self.session = requests.Session()
