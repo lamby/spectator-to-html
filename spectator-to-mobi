@@ -19,7 +19,10 @@ from lxml import etree
 from lxml.cssselect import CSSSelector
 from xdg.BaseDirectory import save_cache_path
 
-re_widont_html = re.compile(r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)', re.IGNORECASE)
+re_widont_html = re.compile(
+    r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)',
+    re.IGNORECASE,
+)
 re_filename_safe = re.compile(r'\w')
 
 DEFAULT_EXCLUDE = {
@@ -38,19 +41,28 @@ DEFAULT_EXCLUDE = {
 
 @click.command()
 @click.argument('url', default='https://www.spectator.co.uk/magazine/')
-@click.option('--filename', default='',
-              help="target filename (default: auto-generated)")
-@click.option('--keep-html', is_flag=True, default=False,
-              help="Keep (and print) the HTML sources directory")
-@click.option('--include', multiple=True,
-              help="include the specified sections")
-@click.option('--exclude', multiple=True,
-              help="Exclude the specified sections")
-@click.option('--verbosity',
-              type=int,
-              default=1,
-              help="Verbosity level; 0=minimal output, 1=normal output, "
-                   "2=verbose output, 3=very verbose output")
+@click.option(
+    '--filename', default='', help="target filename (default: auto-generated)"
+)
+@click.option(
+    '--keep-html',
+    is_flag=True,
+    default=False,
+    help="Keep (and print) the HTML sources directory",
+)
+@click.option(
+    '--include', multiple=True, help="include the specified sections"
+)
+@click.option(
+    '--exclude', multiple=True, help="Exclude the specified sections"
+)
+@click.option(
+    '--verbosity',
+    type=int,
+    default=1,
+    help="Verbosity level; 0=minimal output, 1=normal output, "
+    "2=verbose output, 3=very verbose output",
+)
 def main(*args, **kwargs):
     SpectatorToMobi(*args, **kwargs).main()
 
@@ -77,9 +89,7 @@ class SpectatorToMobi(object):
         self.exclude = {x.lower() for x in self.exclude}
 
     def main(self):
-        self.context = {
-            'articles': [],
-        }
+        self.context = {'articles': []}
 
         self.setup_logging()
         self.handle_base()
@@ -101,11 +111,13 @@ class SpectatorToMobi(object):
 
         html = self.parse(self.base_url)
 
-        self.context['date'] = \
-            CSSSelector('.issue-details__date')(html)[0].text.strip()
+        self.context['date'] = CSSSelector('.issue-details__date')(html)[
+            0
+        ].text.strip()
 
-        self.context['cover'] = \
-            CSSSelector('a.issue-details__cover-link')(html)[0].get('href')
+        self.context['cover'] = CSSSelector('a.issue-details__cover-link')(
+            html
+        )[0].get('href')
 
         for x in CSSSelector('.term-item a.term-item__title-link')(html):
             self.handle_article(x.get('href'))
@@ -137,10 +149,7 @@ class SpectatorToMobi(object):
         title = title.replace("{}: ".format(author), "")
 
         # Remove some subtitles by pushing them into the title
-        for x in (
-            "Portrait of the Week",
-            "Barometer",
-        ):
+        for x in ("Portrait of the Week", "Barometer"):
             if subtitle is not None and "{}: ".format(x) in subtitle:
                 title = x
                 subtitle = ""
@@ -173,17 +182,13 @@ class SpectatorToMobi(object):
         if re.search(r'[a-z]$', subtitle or ''):
             subtitle = "{}.".format(subtitle)
 
-        if category in (
-            "Letters",
-            "Dear Mary",
-            "Portrait of the week",
-        ):
+        if category in ("Letters", "Dear Mary", "Portrait of the week"):
             title = category
             subtitle = ""
 
         # Rewrite title of eg. "Notes on X" to "X" if the category is "Notes of"
         if title.startswith('{} '.format(category)):
-            title = title[len(category) + 1:]
+            title = title[len(category) + 1 :]
 
         try:
             image = CSSSelector('.featured-image img')(html)[0].get('src')
@@ -193,7 +198,9 @@ class SpectatorToMobi(object):
         body = ""
 
         # Add metadata
-        sel = CSSSelector('.article-body .arts-meta, .article-body .book-meta')(html)
+        sel = CSSSelector(
+            '.article-body .arts-meta, .article-body .book-meta'
+        )(html)
         if sel:
             body += '<br/><br/>'
             for elem in sel:
@@ -202,8 +209,12 @@ class SpectatorToMobi(object):
             body += '<br/>'
 
         # Parse/tidy content
-        for elem in CSSSelector('.article-body p, .article-body table, .article-body h2')(html):
-            etree.strip_tags(elem, 'div', 'iframe', 'script', 'v-email-newsletter')
+        for elem in CSSSelector(
+            '.article-body p, .article-body table, .article-body h2'
+        )(html):
+            etree.strip_tags(
+                elem, 'div', 'iframe', 'script', 'v-email-newsletter'
+            )
             body += etree.tostring(elem, encoding='unicode')
 
         for pat, repl in (
@@ -220,7 +231,7 @@ class SpectatorToMobi(object):
             (r'<p><strong>.*Spectator Podcast.</strong></p>', ''),
             (r'<p>.*https://www.spectator.co.uk/subscription.*</p>', ''),
             (r'<!--.*MidArticle_Banner.*-->\s*<br/>', ''),
-            (r'(<span class="book-meta__author">)', '<br>\\1',),
+            (r'(<span class="book-meta__author">)', '<br>\\1'),
             (r'<b/>', ''),
         ):
             body = re.sub(pat, repl, body)
@@ -230,16 +241,15 @@ class SpectatorToMobi(object):
 
         def cb_widont(m):
             return '{}&nbsp;{}{}'.format(*m.groups())
+
         body = re_widont_html.sub(cb_widont, body)
 
         data = {
             'title': title,
             'subtitle': subtitle,
             'author': author,
-
             'url': url,
             'idx': len(self.context['articles']),
-
             'body': body,
             'image': image,
             'category': category,
@@ -253,21 +263,23 @@ class SpectatorToMobi(object):
         with open(os.path.join(tempdir, 'context.json'), 'w') as f:
             json.dump(self.context, f, indent=2)
 
-        assert self.context['articles'], \
-            "No articles downloaded; please check {}".format(self.base_url)
+        assert self.context[
+            'articles'
+        ], "No articles downloaded; please check {}".format(self.base_url)
 
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
         self.context['tempdir'] = tempdir
-        self.context['grouped'] = [(x, list(y)) for x, y in itertools.groupby(
-            self.context['articles'],
-            lambda x: x['category'],
-        )]
+        self.context['grouped'] = [
+            (x, list(y))
+            for x, y in itertools.groupby(
+                self.context['articles'], lambda x: x['category']
+            )
+        ]
 
         self.save_url_to(
-            self.context['cover'],
-            os.path.join(tempdir, 'cover.jpg'),
+            self.context['cover'], os.path.join(tempdir, 'cover.jpg')
         )
 
         for x in ('index.html', 'toc.html', 'style.css'):
@@ -288,15 +300,19 @@ class SpectatorToMobi(object):
         if self.verbosity >= 2:
             stdout, stderr = None, None
 
-        subprocess.call((
-            'kindlegen/kindlegen',
-            '-verbose',
-            os.path.join(tempdir, 'index.html'),
-        ), stdout=stdout, stderr=stderr)
+        subprocess.call(
+            (
+                'kindlegen/kindlegen',
+                '-verbose',
+                os.path.join(tempdir, 'index.html'),
+            ),
+            stdout=stdout,
+            stderr=stderr,
+        )
 
         if not self.filename:
             self.filename = 'The_Spectator_{}.mobi'.format(
-                self.context['date'].replace(' ', '_'),
+                self.context['date'].replace(' ', '_')
             )
 
         self.log.info("Saving output to %s", self.filename)
@@ -308,7 +324,10 @@ class SpectatorToMobi(object):
 
         for pat, repl in (
             (r'\n', 'NEWLINE'),
-            (r'<div class="middle-promo">.+?<div class="sub-content-promo big-bottom">.+?</div>.+?</div>.+?</div>', ''),
+            (
+                r'<div class="middle-promo">.+?<div class="sub-content-promo big-bottom">.+?</div>.+?</div>.+?</div>',
+                '',
+            ),
             (r'NEWLINE', '\n'),
         ):
             body = re.sub(pat, repl, body)
@@ -321,7 +340,10 @@ class SpectatorToMobi(object):
             ''.join(x for x in url if re_filename_safe.match(x)),
         )
 
-        if os.path.exists(filename) and os.path.getmtime(filename) > self.epoch:
+        if (
+            os.path.exists(filename)
+            and os.path.getmtime(filename) > self.epoch
+        ):
             with open(filename, 'rb') as f:
                 return pickle.load(f)
 
@@ -340,11 +362,11 @@ class SpectatorToMobi(object):
 
     def setup_logging(self):
         self.log = logging.getLogger()
-        self.log.setLevel({
-            0: logging.WARNING,
-            1: logging.INFO,
-            2: logging.DEBUG,
-        }[self.verbosity])
+        self.log.setLevel(
+            {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}[
+                self.verbosity
+            ]
+        )
 
         handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(
