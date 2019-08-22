@@ -82,7 +82,7 @@ class SpectatorToMobi(object):
             self.exclude.update(set(x.split(',')))
 
         for x in include:
-            for y in xs.split(','):
+            for y in x.split(','):
                 self.exclude.discard(y)
 
         # Normalise to lower-case
