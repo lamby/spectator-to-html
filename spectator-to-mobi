@@ -215,7 +215,12 @@ class SpectatorToMobi:
             etree.strip_tags(
                 elem, 'div', 'iframe', 'script', 'v-email-newsletter'
             )
-            body += etree.tostring(elem, encoding='unicode')
+            x = etree.tostring(elem, encoding='unicode')
+
+            if elem.getparent().tag == 'blockquote':
+                body += '<blockquote>{}</blockquote>'.format(x)
+            else:
+                body += x
 
         for pat, repl in (
             (r'\u00a0', '&nbsp;'),
