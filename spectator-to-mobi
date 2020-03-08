@@ -9,38 +9,42 @@ import click
 import jinja2
 import shutil
 import pickle
+import hashlib
 import logging
 import requests
 import tempfile
 import itertools
 import subprocess
 
-from lxml import etree
-from lxml.cssselect import CSSSelector
 from xdg.BaseDirectory import save_cache_path
 
 re_widont_html = re.compile(
     r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)',
     re.IGNORECASE,
 )
-re_filename_safe = re.compile(r'\w')
+re_page_content = re.compile(r'decodeURIComponent\("([^"]+)')
 
 DEFAULT_EXCLUDE = {
-    "Christmas Crossword",
-    "Christmas Quiz Questions",
-    "Christmas crossword solution",
+    "Chess",
+    "Chess puzzle",
     "Crossword",
     "Crossword solution",
+    "The turf",
+    "Drink",
+    "Exhibitions",
+    "Theatre",
+    "Bridge",
+    "Battle for Britain",
+    "Music",
+    "Arts feature",
     "Competition",
-    "Chess puzzle",
-    "Coffee House",
-    "Economic Disruptor Award",
-    "The Best of Coffee House",
+    "The Listener",
 }
 
 
 @click.command()
-@click.argument('url', default='https://www.spectator.co.uk/magazine/')
+@click.argument('api_key', default='bltf04078f3cf7a9c30')
+@click.argument('access_token', default='cs4b204a44bc4e88da701dbc9b')
 @click.option(
     '--filename', default='', help="target filename (default: auto-generated)"
 )
@@ -64,15 +68,27 @@ DEFAULT_EXCLUDE = {
     "2=verbose output, 3=very verbose output",
 )
 def main(*args, **kwargs):
-    SpectatorToMobi(*args, **kwargs).main()
+    return SpectatorToMobi(*args, **kwargs).main()
 
 
 class SpectatorToMobi:
-    def __init__(self, url, filename, keep_html, include, exclude, verbosity):
+    def __init__(
+        self,
+        api_key,
+        access_token,
+        filename,
+        keep_html,
+        include,
+        exclude,
+        verbosity,
+    ):
         self.epoch = time.time() - 3600
         self.session = requests.Session()
 
-        self.base_url = url
+        self.base_url = "https://spectator.co.uk"
+        self.api_key = api_key
+        self.access_token = access_token
+
         self.filename = filename
         self.keep_html = keep_html
         self.verbosity = verbosity
@@ -109,140 +125,100 @@ class SpectatorToMobi:
     def handle_base(self):
         self.log.info("Starting conversion of %s", self.base_url)
 
-        html = self.parse(self.base_url)
+        data = self.parse(
+            "/content_types/magazine_issue/entries?environment=live&desc=issue_date&limit=1&only[BASE][]=url"
+        )
 
-        self.context['date'] = CSSSelector('.issue-details__date')(html)[
-            0
-        ].text.strip()
+        url = data['entries'][0]['url']
+        date = self.context['date'] = url.split("/")[-1]
 
-        self.context['cover'] = CSSSelector('a.issue-details__cover-link')(
-            html
-        )[0].get('href')
+        self.log.debug("Latest magazine for %s is at %s", date, url)
 
-        for x in CSSSelector('.term-item a.term-item__title-link')(html):
-            self.handle_article(x.get('href'))
+        data = self.parse(
+            "/content_types/article/entries?environment=live&include[]=topic&include[]=magazine_content_production_only.magazine_issue&include[]=magazine_content_production_only.magazine_subsection&include[]=author&query={%22magazine_content_production_only.magazine_issue%22:%20{%22$in_query%22:%20{%20%22url%22:%20%22"
+            + url
+            + "%22%20},%20%22_content_type_uid%22:%20%22magazine_issue%22},%20%22_content_type_uid%22:%20%22article%22}"
+        )
+
+        with open('base.json', 'w') as f:
+            f.write(json.dumps(data, indent=2))
+
+        self.context['cover'] = data['entries'][0][
+            "magazine_content_production_only"
+        ]["magazine_issue"][0]["magazine_cover"]["url"]
+        self.log.debug("Found cover at %s", self.context['cover'])
+
+        for x in data['entries']:
+            self.handle_article(x)
 
         # Pull to front
         for idx, x in enumerate(list(self.context['articles'])):
-            if x['category'] == "Portrait of the week":
+            if x['subsection'] == "Portrait of the week":
                 self.context['articles'].pop(idx)
                 self.context['articles'].insert(0, x)
+        for idx, x in enumerate(list(self.context['articles'])):
+            if x['subsection'] == "Leading article":
+                self.context['articles'].pop(idx)
+                self.context['articles'].insert(1, x)
+
+        # Push to end
+        for idx, x in enumerate(list(self.context['articles'])):
+            if x['subsection'] == "Dear Mary":
+                self.context['articles'].pop(idx)
+                self.context['articles'].append(x)
                 break
 
-    def handle_article(self, url):
-        html = self.parse(url)
+    def handle_article(self, data):
+        with open('article.json', 'w') as f:
+            f.write(json.dumps(data, indent=2))
 
-        def text(x):
-            try:
-                elem = CSSSelector(x)(html)[0]
-            except IndexError:
-                return None
+        author = ', '.join(x['title'] for x in data['author'])
+        title = data['title']
+        byline = data['byline']
+        subsection = data['magazine_content_production_only'][
+            'magazine_subsection'
+        ][0]['title']
+        image = data['hero_image'][0]["url"]
 
-            return ' '.join(elem.itertext()).strip()
+        # Subsection
 
-        author = text('.article-header .article-header__author a')
-        title = text('.article-header h1')
-        subtitle = text('.article-header h2')
-        category = text('.article-header .article-header__category a')
+        # Rewrite first
+        if subsection.startswith("More from "):
+            subsection = subsection[10:]
+        if subsection == "Lead book review":
+            subsection = "Books"
+        if subsection == "Notes on...":
+            subsection = "Notes on"
 
-        # If the title starts with the author's name, strip it out.
-        title = title.replace("{}: ".format(author), "")
+        # Exclude
+        if subsection.lower() in self.exclude:
+            return
 
-        # Remove some subtitles by pushing them into the title
-        for x in ("Portrait of the Week", "Barometer"):
-            if subtitle is not None and "{}: ".format(x) in subtitle:
-                title = x
-                subtitle = ""
-                category = x
+        if subsection in ("Letters", "Dear Mary", "Portrait of the week"):
+            title = subsection
+            byline = ""
+
+        # Author
 
         if author == "The Spectator":
             author = ""
 
-        # Fixup the leading article author
-        if category == "Leading article":
-            author = "The Spectator"
+        # Byline
 
-        # Recategorise some things
-        for x, y in (
-            ("Lead book review", "Books"),
-            ("Leading book review", "Books"),
-            ("From The Archives", "From the Archives"),
-            ("Battle for Britain", "The Battle for Britain"),
-            ("Notes on...", "Notes on"),
-        ):
-            if category == x:
-                category = y
-
-        if category.lower() in self.exclude:
-            return
-
-        # If subtitle is missing a full-stop, append one. We match for a
+        # If byline is missing a full-stop, append one. We match for a
         # lower-case letter, to avoid whack-a-mole with various other
         # punctuation.
-        if re.search(r'[a-z]$', subtitle or ''):
-            subtitle = "{}.".format(subtitle)
+        if re.search(r'[a-z]$', byline or ''):
+            byline = "{}.".format(byline)
 
-        if category in ("Letters", "Dear Mary", "Portrait of the week"):
-            title = category
-            subtitle = ""
+        # Body
+        body = data['text_body']
 
-        # Rewrite title of eg. "Notes on X" to "X" if the category is "Notes of"
-        if title.startswith('{} '.format(category)):
-            title = title[len(category) + 1 :]
-
-        try:
-            image = CSSSelector('.featured-image img')(html)[0].get('src')
-        except IndexError:
-            image = None
-
-        body = ""
-
-        # Add metadata
-        sel = CSSSelector(
-            '.article-body .arts-meta, .article-body .book-meta'
-        )(html)
-        if sel:
-            body += '<br/><br/>'
-            for elem in sel:
-                body += etree.tostring(elem, encoding='unicode')
-                elem.getparent().remove(elem)
-            body += '<br/>'
-
-        # Parse/tidy content
-        for elem in CSSSelector(
-            '.article-body p, .article-body table, .article-body h2'
-        )(html):
-            etree.strip_tags(
-                elem, 'div', 'iframe', 'script', 'v-email-newsletter'
+        # Add book metadata
+        for x in reversed(data['books_arts']):
+            body = '<p>{}</p><p><em>{}</em></p>{}'.format(
+                x['books_title'], x['books_author'], body
             )
-            x = etree.tostring(elem, encoding='unicode')
-
-            if elem.getparent().tag == 'blockquote':
-                body += '<blockquote>{}</blockquote>'.format(x)
-            else:
-                body += x
-
-        for pat, repl in (
-            (r'\u00a0', '&nbsp;'),
-            (r'\ngoogletag.*', ''),
-            (r'\u2019', '\''),
-            (r'\u2018', '\''),
-            (r'<p/>', ''),
-            (r'<h2>', '<h5>'),
-            (r'</h2>', '</h5>'),
-            (r'<h3>', '<h6>'),
-            (r'</h3>', '</h6>'),
-            (r'<p><(?:i|em)>On the Spectator Podcast, .*</p>', ''),
-            (r'<p><strong>.*Spectator Podcast.</strong></p>', ''),
-            (r'<p>.*https://www.spectator.co.uk/subscription.*</p>', ''),
-            (r'<!--.*MidArticle_Banner.*-->\s*<br/>', ''),
-            (r'(<span class="book-meta__author">)', '<br>\\1'),
-            (r'<b/>', ''),
-        ):
-            body = re.sub(pat, repl, body)
-
-        if category == "Portrait of the week":
-            body = re.sub(r'\s*(?:&nbsp;)*\s*[A-Z]{3}</p>', '</p>', body)
 
         def cb_widont(m):
             return '{}&nbsp;{}{}'.format(*m.groups())
@@ -251,13 +227,13 @@ class SpectatorToMobi:
 
         data = {
             'title': title,
-            'subtitle': subtitle,
+            'byline': byline,
             'author': author,
-            'url': url,
+            'url': 'https://www.spectator.co.uk{}'.format(data['url']),
             'idx': len(self.context['articles']),
             'body': body,
             'image': image,
-            'category': category,
+            'subsection': subsection,
         }
 
         self.context['articles'].append(data)
@@ -279,7 +255,7 @@ class SpectatorToMobi:
         self.context['grouped'] = [
             (x, list(y))
             for x, y in itertools.groupby(
-                self.context['articles'], lambda x: x['category']
+                self.context['articles'], lambda x: x['subsection']
             )
         ]
 
@@ -324,25 +300,24 @@ class SpectatorToMobi:
 
         shutil.move(os.path.join(tempdir, 'index.mobi'), self.filename)
 
-    def parse(self, *args, **kwargs):
-        body = self.get(*args, **kwargs).text
+    def parse(self, url, **kwargs):
+        url = 'https://cdn.contentstack.io/v3{}'.format(url)
 
-        for pat, repl in (
-            (r'\n', 'NEWLINE'),
-            (
-                r'<div class="middle-promo">.+?<div class="sub-content-promo big-bottom">.+?</div>.+?</div>.+?</div>',
-                '',
-            ),
-            (r'NEWLINE', '\n'),
-        ):
-            body = re.sub(pat, repl, body)
+        return self.get(url, **kwargs).json()
 
-        return etree.HTML(body)
+    def get(self, url, **kwargs):
+        kwargs.update(
+            {'api_key': self.api_key, 'access_token': self.access_token}
+        )
 
-    def get(self, url):
+        h = hashlib.sha1()
+        h.update(url.encode('utf-8'))
+        for k, v in kwargs.items():
+            h.update(k.encode('utf-8'))
+            h.update(v.encode('utf-8'))
+
         filename = os.path.join(
-            save_cache_path('spectator-to-mobi'),
-            ''.join(x for x in url if re_filename_safe.match(x)),
+            save_cache_path('spectator-to-mobi'), h.hexdigest()
         )
 
         if (
@@ -352,7 +327,9 @@ class SpectatorToMobi:
             with open(filename, 'rb') as f:
                 return pickle.load(f)
 
-        response = self.session.get(url, headers={'User-agent': 'Mozilla/5.0'})
+        response = self.session.get(
+            url, headers={'User-agent': 'Mozilla/5.0'}, params=kwargs
+        )
         response.raise_for_status()
 
         with open(filename, 'wb') as f:
@@ -379,6 +356,21 @@ class SpectatorToMobi:
         )
         self.log.addHandler(handler)
 
+    def json_find(self, needle, haystack):
+        if not isinstance(haystack, dict):
+            return
+
+        for k, v in haystack.items():
+            if k == needle:
+                yield v
+
+            elif isinstance(v, dict):
+                for x in self.json_find(needle, v):
+                    yield x
+
+    def json_find_first(self, needle, haystack):
+        return list(self.json_find(needle, haystack))[0]
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
