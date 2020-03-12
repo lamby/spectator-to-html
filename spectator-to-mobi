@@ -22,7 +22,6 @@ re_widont_html = re.compile(
     r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)',
     re.IGNORECASE,
 )
-re_page_content = re.compile(r'decodeURIComponent\("([^"]+)')
 
 DEFAULT_EXCLUDE = {
     "Chess",
@@ -39,6 +38,11 @@ DEFAULT_EXCLUDE = {
     "Arts feature",
     "Competition",
     "The Listener",
+    "Wild life",
+    "Pop",
+    "Dance",
+    "Opera",
+    "Spectator Wine",
 }
 
 
@@ -93,6 +97,8 @@ class SpectatorToMobi:
         self.keep_html = keep_html
         self.verbosity = verbosity
 
+        self._parsed = None
+
         self.exclude = DEFAULT_EXCLUDE.copy()
         for x in exclude:
             self.exclude.update(set(x.split(',')))
@@ -108,7 +114,15 @@ class SpectatorToMobi:
         self.context = {'articles': []}
 
         self.setup_logging()
-        self.handle_base()
+
+        try:
+            self.handle_base()
+        except:
+            if self._parsed:
+                with tempfile.NamedTemporaryFile(prefix='spectator-to-mobi-', mode="w", suffix='.json', delete=False) as f:
+                    json.dump(self._parsed, f, indent=2)
+                    self.log.exception("Exception caught; writing last output to %s", f.name)
+            raise
 
         t = tempfile.mkdtemp(prefix='spectator-to-mobi-')
 
@@ -140,9 +154,6 @@ class SpectatorToMobi:
             + "%22%20},%20%22_content_type_uid%22:%20%22magazine_issue%22},%20%22_content_type_uid%22:%20%22article%22}"
         )
 
-        with open('base.json', 'w') as f:
-            f.write(json.dumps(data, indent=2))
-
         self.context['cover'] = data['entries'][0][
             "magazine_content_production_only"
         ]["magazine_issue"][0]["magazine_cover"]["url"]
@@ -163,22 +174,34 @@ class SpectatorToMobi:
 
         # Push to end
         for idx, x in enumerate(list(self.context['articles'])):
+            if x['subsection'] == "Food":
+                self.context['articles'].pop(idx)
+                self.context['articles'].append(x)
+                break
+        for idx, x in enumerate(list(self.context['articles'])):
             if x['subsection'] == "Dear Mary":
                 self.context['articles'].pop(idx)
                 self.context['articles'].append(x)
                 break
 
     def handle_article(self, data):
-        with open('article.json', 'w') as f:
-            f.write(json.dumps(data, indent=2))
-
         author = ', '.join(x['title'] for x in data['author'])
+
+        # Title
         title = data['title']
+
+        # If the title starts with the author's name, strip it out.
+        title = title.replace("{}: ".format(author), "")
+
         byline = data['byline']
         subsection = data['magazine_content_production_only'][
             'magazine_subsection'
         ][0]['title']
-        image = data['hero_image'][0]["url"]
+
+        try:
+            image = data['hero_image'][0]["url"]
+        except IndexError:
+            image = None  # Hero images are optional
 
         # Subsection
 
@@ -216,7 +239,7 @@ class SpectatorToMobi:
 
         # Add book metadata
         for x in reversed(data['books_arts']):
-            body = '<p>{}</p><p><em>{}</em></p>{}'.format(
+            body = '<p>{}: <em>{}</em></p>{}'.format(
                 x['books_title'], x['books_author'], body
             )
 
@@ -224,6 +247,10 @@ class SpectatorToMobi:
             return '{}&nbsp;{}{}'.format(*m.groups())
 
         body = re_widont_html.sub(cb_widont, body)
+
+        for pattern, repl in ((r'\s*CSH</p>', ''),):
+            body = re.sub(pattern, repl, body)
+
 
         data = {
             'title': title,
@@ -303,7 +330,9 @@ class SpectatorToMobi:
     def parse(self, url, **kwargs):
         url = 'https://cdn.contentstack.io/v3{}'.format(url)
 
-        return self.get(url, **kwargs).json()
+        self._parsed = self.get(url, **kwargs).json()
+
+        return self._parsed
 
     def get(self, url, **kwargs):
         kwargs.update(
