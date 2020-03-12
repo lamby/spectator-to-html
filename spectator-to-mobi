@@ -239,7 +239,7 @@ class SpectatorToMobi:
 
         # Add book metadata
         for x in reversed(data['books_arts']):
-            body = '<p>{}: <em>{}</em></p>{}'.format(
+            body = '<p><em>{}</em> {}</p>{}'.format(
                 x['books_title'], x['books_author'], body
             )
 
