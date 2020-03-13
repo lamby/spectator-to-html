@@ -119,9 +119,16 @@ class SpectatorToMobi:
             self.handle_base()
         except:
             if self._parsed:
-                with tempfile.NamedTemporaryFile(prefix='spectator-to-mobi-', mode="w", suffix='.json', delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    prefix='spectator-to-mobi-',
+                    mode="w",
+                    suffix='.json',
+                    delete=False,
+                ) as f:
                     json.dump(self._parsed, f, indent=2)
-                    self.log.exception("Exception caught; writing last output to %s", f.name)
+                    self.log.exception(
+                        "Exception caught; writing last output to %s", f.name
+                    )
             raise
 
         t = tempfile.mkdtemp(prefix='spectator-to-mobi-')
@@ -250,7 +257,6 @@ class SpectatorToMobi:
 
         for pattern, repl in ((r'\s*CSH</p>', ''),):
             body = re.sub(pattern, repl, body)
-
 
         data = {
             'title': title,
