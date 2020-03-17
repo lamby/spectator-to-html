@@ -18,32 +18,59 @@ import subprocess
 
 from xdg.BaseDirectory import save_cache_path
 
+CONFIG = (
+    {'name': "Portrait of the week", "force_title": True},
+    {'name': "Leading article", "show_title": False},
+    {'name': "Features", "show_title": False},
+    {'name': "The Spectator's Notes"},
+    {'name': "Columns"},
+    {'name': "Diary"},
+    {'name': "Interview"},
+    {'name': "Any other business"},
+    {'name': "Ancient and modern"},
+    {'name': "Letters", "force_title": True},
+    {'name': "Notes on"},
+    {'name': "Books"},
+    {'name': "High life"},
+    {'name': "Low life"},
+    {'name': "Real life"},
+    {'name': "Television"},
+    {'name': "Cinema"},
+    {'name': "Spectator Sport"},
+    {'name': "No sacred cows"},
+    {'name': "Mind your language"},
+    {'name': "Food"},
+    {'name': "Dear Mary", "force_title": True},
+    {'name': "Chess", 'exclude': True},
+    {'name': "Chess puzzle", 'exclude': True},
+    {'name': "Crossword", 'exclude': True},
+    {'name': "Crossword solution", 'exclude': True},
+    {'name': "The turf", 'exclude': True},
+    {'name': "Drink", 'exclude': True},
+    {'name': "Exhibitions", 'exclude': True},
+    {'name': "Theatre", 'exclude': True},
+    {'name': "Bridge", 'exclude': True},
+    {'name': "Battle for Britain", 'exclude': True},
+    {'name': "Music", 'exclude': True},
+    {'name': "Arts feature", 'exclude': True},
+    {'name': "Competition", 'exclude': True},
+    {'name': "The Listener", 'exclude': True},
+    {'name': "Wild life", 'exclude': True},
+    {'name': "Pop", 'exclude': True},
+    {'name': "Dance", 'exclude': True},
+    {'name': "Opera", 'exclude': True},
+    {'name': "Spectator Wine", 'exclude': True},
+)
+
+CONFIG_BY_NAME = {}
+for idx, x in enumerate(CONFIG):
+    x['idx'] = idx
+    CONFIG_BY_NAME[x['name']] = x
+
 re_widont_html = re.compile(
     r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)',
     re.IGNORECASE,
 )
-
-DEFAULT_EXCLUDE = {
-    "Chess",
-    "Chess puzzle",
-    "Crossword",
-    "Crossword solution",
-    "The turf",
-    "Drink",
-    "Exhibitions",
-    "Theatre",
-    "Bridge",
-    "Battle for Britain",
-    "Music",
-    "Arts feature",
-    "Competition",
-    "The Listener",
-    "Wild life",
-    "Pop",
-    "Dance",
-    "Opera",
-    "Spectator Wine",
-}
 
 
 @click.command()
@@ -59,12 +86,6 @@ DEFAULT_EXCLUDE = {
     help="Keep (and print) the HTML sources directory",
 )
 @click.option(
-    '--include', multiple=True, help="include the specified sections"
-)
-@click.option(
-    '--exclude', multiple=True, help="Exclude the specified sections"
-)
-@click.option(
     '--verbosity',
     type=int,
     default=1,
@@ -77,14 +98,7 @@ def main(*args, **kwargs):
 
 class SpectatorToMobi:
     def __init__(
-        self,
-        api_key,
-        access_token,
-        filename,
-        keep_html,
-        include,
-        exclude,
-        verbosity,
+        self, api_key, access_token, filename, keep_html, verbosity,
     ):
         self.epoch = time.time() - 3600
         self.session = requests.Session()
@@ -99,17 +113,6 @@ class SpectatorToMobi:
 
         self._parsed = None
 
-        self.exclude = DEFAULT_EXCLUDE.copy()
-        for x in exclude:
-            self.exclude.update(set(x.split(',')))
-
-        for x in include:
-            for y in x.split(','):
-                self.exclude.discard(y)
-
-        # Normalise to lower-case
-        self.exclude = {x.lower() for x in self.exclude}
-
     def main(self):
         self.context = {'articles': []}
 
@@ -117,7 +120,7 @@ class SpectatorToMobi:
 
         try:
             self.handle_base()
-        except:
+        except Exception:
             if self._parsed:
                 with tempfile.NamedTemporaryFile(
                     prefix='spectator-to-mobi-',
@@ -169,27 +172,13 @@ class SpectatorToMobi:
         for x in data['entries']:
             self.handle_article(x)
 
-        # Pull to front
-        for idx, x in enumerate(list(self.context['articles'])):
-            if x['subsection'] == "Portrait of the week":
-                self.context['articles'].pop(idx)
-                self.context['articles'].insert(0, x)
-        for idx, x in enumerate(list(self.context['articles'])):
-            if x['subsection'] == "Leading article":
-                self.context['articles'].pop(idx)
-                self.context['articles'].insert(1, x)
+        def key_fn(x):
+            try:
+                return CONFIG_BY_NAME[x['subsection']]['idx']
+            except KeyError:
+                return 0
 
-        # Push to end
-        for idx, x in enumerate(list(self.context['articles'])):
-            if x['subsection'] == "Food":
-                self.context['articles'].pop(idx)
-                self.context['articles'].append(x)
-                break
-        for idx, x in enumerate(list(self.context['articles'])):
-            if x['subsection'] == "Dear Mary":
-                self.context['articles'].pop(idx)
-                self.context['articles'].append(x)
-                break
+        self.context['articles'].sort(key=key_fn)
 
     def handle_article(self, data):
         author = ', '.join(x['title'] for x in data['author'])
@@ -220,16 +209,20 @@ class SpectatorToMobi:
         if subsection == "Notes on...":
             subsection = "Notes on"
 
-        # Exclude
-        if subsection.lower() in self.exclude:
-            return
+        try:
+            if CONFIG_BY_NAME[subsection]['exclude']:
+                return
+        except KeyError:
+            pass
 
-        if subsection in ("Letters", "Dear Mary", "Portrait of the week"):
-            title = subsection
-            byline = ""
+        try:
+            if CONFIG_BY_NAME[subsection]['force_title']:
+                title = subsection
+                byline = ""
+        except KeyError:
+            pass
 
         # Author
-
         if author == "The Spectator":
             author = ""
 
