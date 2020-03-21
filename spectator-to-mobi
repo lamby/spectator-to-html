@@ -19,74 +19,79 @@ import subprocess
 from xdg.BaseDirectory import save_cache_path
 
 CONFIG = (
-    {'name': "Portrait of the week", "force_title": True},
-    {'name': "Leading article", "show_title": False},
-    {'name': "Features", "show_title": False},
-    {'name': "The Spectator's Notes"},
-    {'name': "Columns"},
-    {'name': "Diary"},
-    {'name': "Interview"},
-    {'name': "Any other business"},
-    {'name': "Ancient and modern"},
-    {'name': "Letters", "force_title": True},
-    {'name': "Notes on"},
-    {'name': "Books"},
-    {'name': "High life"},
-    {'name': "Low life"},
-    {'name': "Real life"},
-    {'name': "Television"},
-    {'name': "Cinema"},
-    {'name': "Spectator Sport"},
-    {'name': "No sacred cows"},
-    {'name': "Mind your language"},
-    {'name': "Food"},
-    {'name': "Dear Mary", "force_title": True},
-    {'name': "Chess", 'exclude': True},
-    {'name': "Chess puzzle", 'exclude': True},
-    {'name': "Crossword", 'exclude': True},
-    {'name': "Crossword solution", 'exclude': True},
-    {'name': "The turf", 'exclude': True},
-    {'name': "Drink", 'exclude': True},
-    {'name': "Exhibitions", 'exclude': True},
-    {'name': "Theatre", 'exclude': True},
-    {'name': "Bridge", 'exclude': True},
-    {'name': "Battle for Britain", 'exclude': True},
-    {'name': "Music", 'exclude': True},
-    {'name': "Arts feature", 'exclude': True},
-    {'name': "Competition", 'exclude': True},
-    {'name': "The Listener", 'exclude': True},
-    {'name': "Wild life", 'exclude': True},
-    {'name': "Pop", 'exclude': True},
-    {'name': "Dance", 'exclude': True},
-    {'name': "Opera", 'exclude': True},
-    {'name': "Spectator Wine", 'exclude': True},
+    {"name": "Portrait of the week", "ignore_title": True},
+    {"name": "Leading article", "show_title": False},
+    {"name": "Features", "show_title": False},
+    {"name": "The Spectator's Notes"},
+    {"name": "Columns"},
+    {"name": "Diary"},
+    {"name": "Interview"},
+    {},
+    {"name": "Any other business"},
+    {"name": "Barometer"},
+    {"name": "Ancient and modern"},
+    {"name": "Letters", "ignore_title": True},
+    {"name": "Notes on"},
+    {"name": "Arts feature"},
+    {"name": "Books"},
+    {"name": "Music"},
+    {"name": "High life"},
+    {"name": "Low life"},
+    {"name": "Real life"},
+    {"name": "Television"},
+    {"name": "Cinema"},
+    {"name": "Spectator Sport"},
+    {"name": "No sacred cows"},
+    {"name": "The Wiki Man"},
+    {"name": "Mind your language"},
+    {"name": "Food"},
+    {"name": "Dear Mary", "ignore_title": True},
+    {"name": "Battle for Britain", "exclude": True, "ignore_title": True},
+    {"name": "Bridge", "exclude": True, "ignore_title": True},
+    {"name": "Chess puzzle", "exclude": True, "ignore_title": True},
+    {"name": "Chess", "exclude": True},
+    {"name": "Competition", "exclude": True},
+    {"name": "Crossword solution", "exclude": True, "ignore_title": True},
+    {"name": "Crossword", "exclude": True, "ignore_title": True},
+    {"name": "Dance", "exclude": True},
+    {"name": "Drink", "exclude": True},
+    {"name": "Exhibitions", "exclude": True},
+    {"name": "Opera", "exclude": True},
+    {"name": "Pop", "exclude": True},
+    {"name": "Spectator Wine", "exclude": True},
+    {"name": "The Listener", "exclude": True},
+    {"name": "The turf", "exclude": True},
+    {"name": "Theatre", "exclude": True},
+    {"name": "Wild life", "exclude": True},
 )
+
+GENERIC_AUTHORS = {"The Spectator", "Doc"}
 
 CONFIG_BY_NAME = {}
 for idx, x in enumerate(CONFIG):
-    x['idx'] = idx
-    CONFIG_BY_NAME[x['name']] = x
+    x["idx"] = idx
+    CONFIG_BY_NAME[x.get("name")] = x
 
 re_widont_html = re.compile(
-    r'([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)',
+    r"([^<>\s])\s+([^<>\s]+\s*)(</?(?:address|blockquote|br|dd|div|dt|fieldset|form|h[1-6]|li|noscript|p|td|th)[^>]*>|$)",
     re.IGNORECASE,
 )
 
 
 @click.command()
-@click.argument('api_key', default='bltf04078f3cf7a9c30')
-@click.argument('access_token', default='cs4b204a44bc4e88da701dbc9b')
+@click.argument("api_key", default="bltf04078f3cf7a9c30")
+@click.argument("access_token", default="cs4b204a44bc4e88da701dbc9b")
 @click.option(
-    '--filename', default='', help="target filename (default: auto-generated)"
+    "--filename", default="", help="target filename (default: auto-generated)"
 )
 @click.option(
-    '--keep-html',
+    "--keep-html",
     is_flag=True,
     default=False,
     help="Keep (and print) the HTML sources directory",
 )
 @click.option(
-    '--verbosity',
+    "--verbosity",
     type=int,
     default=1,
     help="Verbosity level; 0=minimal output, 1=normal output, "
@@ -114,7 +119,7 @@ class SpectatorToMobi:
         self._parsed = None
 
     def main(self):
-        self.context = {'articles': []}
+        self.context = {"articles": []}
 
         self.setup_logging()
 
@@ -123,9 +128,9 @@ class SpectatorToMobi:
         except Exception:
             if self._parsed:
                 with tempfile.NamedTemporaryFile(
-                    prefix='spectator-to-mobi-',
+                    prefix="spectator-to-mobi-",
                     mode="w",
-                    suffix='.json',
+                    suffix=".json",
                     delete=False,
                 ) as f:
                     json.dump(self._parsed, f, indent=2)
@@ -134,13 +139,14 @@ class SpectatorToMobi:
                     )
             raise
 
-        t = tempfile.mkdtemp(prefix='spectator-to-mobi-')
+        t = tempfile.mkdtemp(prefix="spectator-to-mobi-")
 
         try:
             self.generate_mobi(t)
         finally:
             if self.keep_html:
                 self.log.info("Keeping HTML in %s/index.html", t)
+                subprocess.call(("xdg-open", "{}/index.html".format(t)))
             else:
                 shutil.rmtree(t, ignore_errors=True)
 
@@ -153,8 +159,8 @@ class SpectatorToMobi:
             "/content_types/magazine_issue/entries?environment=live&desc=issue_date&limit=1&only[BASE][]=url"
         )
 
-        url = data['entries'][0]['url']
-        date = self.context['date'] = url.split("/")[-1]
+        url = data["entries"][0]["url"]
+        date = self.context["date"] = url.split("/")[-1]
 
         self.log.debug("Latest magazine for %s is at %s", date, url)
 
@@ -164,38 +170,38 @@ class SpectatorToMobi:
             + "%22%20},%20%22_content_type_uid%22:%20%22magazine_issue%22},%20%22_content_type_uid%22:%20%22article%22}"
         )
 
-        self.context['cover'] = data['entries'][0][
+        self.context["cover"] = data["entries"][0][
             "magazine_content_production_only"
         ]["magazine_issue"][0]["magazine_cover"]["url"]
-        self.log.debug("Found cover at %s", self.context['cover'])
+        self.log.debug("Found cover at %s", self.context["cover"])
 
-        for x in data['entries']:
+        for x in data["entries"]:
             self.handle_article(x)
 
         def key_fn(x):
             try:
-                return CONFIG_BY_NAME[x['subsection']]['idx']
+                return CONFIG_BY_NAME[x["subsection"]]["idx"]
             except KeyError:
-                return 0
+                return CONFIG_BY_NAME[None]["idx"]
 
-        self.context['articles'].sort(key=key_fn)
+        self.context["articles"].sort(key=key_fn)
 
     def handle_article(self, data):
-        author = ', '.join(x['title'] for x in data['author'])
+        author = ", ".join(x["title"] for x in data["author"])
 
         # Title
-        title = data['title']
+        title = data["title"]
 
         # If the title starts with the author's name, strip it out.
         title = title.replace("{}: ".format(author), "")
 
-        byline = data['byline']
-        subsection = data['magazine_content_production_only'][
-            'magazine_subsection'
-        ][0]['title']
+        byline = data["byline"]
+        subsection = data["magazine_content_production_only"][
+            "magazine_subsection"
+        ][0]["title"]
 
         try:
-            image = data['hero_image'][0]["url"]
+            image = data["hero_image"][0]["url"]
         except IndexError:
             image = None  # Hero images are optional
 
@@ -210,97 +216,99 @@ class SpectatorToMobi:
             subsection = "Notes on"
 
         try:
-            if CONFIG_BY_NAME[subsection]['exclude']:
-                return
+            if CONFIG_BY_NAME[subsection]["exclude"]:
+                pass
         except KeyError:
             pass
 
         try:
-            if CONFIG_BY_NAME[subsection]['force_title']:
+            if CONFIG_BY_NAME[subsection]["ignore_title"]:
                 title = subsection
                 byline = ""
         except KeyError:
             pass
 
-        # Author
-        if author == "The Spectator":
-            author = ""
+        try:
+            if author in GENERIC_AUTHORS:
+                author = ""
+        except KeyError:
+            pass
 
         # Byline
 
         # If byline is missing a full-stop, append one. We match for a
         # lower-case letter, to avoid whack-a-mole with various other
         # punctuation.
-        if re.search(r'[a-z]$', byline or ''):
+        if re.search(r"[a-z]$", byline or ""):
             byline = "{}.".format(byline)
 
         # Body
-        body = data['text_body']
+        body = data["text_body"]
 
         # Add book metadata
-        for x in reversed(data['books_arts']):
-            body = '<p><em>{}</em> {}</p>{}'.format(
-                x['books_title'], x['books_author'], body
+        for x in reversed(data["books_arts"]):
+            body = "<p><em>{}</em> {}</p>{}".format(
+                x["books_title"], x["books_author"], body
             )
 
         def cb_widont(m):
-            return '{}&nbsp;{}{}'.format(*m.groups())
+            return "{}&nbsp;{}{}".format(*m.groups())
 
         body = re_widont_html.sub(cb_widont, body)
 
-        for pattern, repl in ((r'\s*CSH</p>', ''),):
+        for pattern, repl in ((r"\s*CSH</p>", ""),):
             body = re.sub(pattern, repl, body)
 
         data = {
-            'title': title,
-            'byline': byline,
-            'author': author,
-            'url': 'https://www.spectator.co.uk{}'.format(data['url']),
-            'idx': len(self.context['articles']),
-            'body': body,
-            'image': image,
-            'subsection': subsection,
+            "title": title,
+            "byline": byline,
+            "author": author,
+            "url": "https://www.spectator.co.uk{}".format(data["url"]),
+            "idx": len(self.context["articles"]),
+            "body": body,
+            "image": image,
+            "subsection": subsection,
         }
 
-        self.context['articles'].append(data)
+        self.context["articles"].append(data)
 
     def generate_mobi(self, tempdir):
         self.log.info("Generating .mobi in %s", tempdir)
 
-        with open(os.path.join(tempdir, 'context.json'), 'w') as f:
+        with open(os.path.join(tempdir, "context.json"), "w") as f:
             json.dump(self.context, f, indent=2)
 
         assert self.context[
-            'articles'
+            "articles"
         ], "No articles downloaded; please check {}".format(self.base_url)
 
-        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
-        self.context['tempdir'] = tempdir
-        self.context['grouped'] = [
+        self.context["tempdir"] = tempdir
+        self.context["grouped"] = [
             (x, list(y))
             for x, y in itertools.groupby(
-                self.context['articles'], lambda x: x['subsection']
+                self.context["articles"], lambda x: x["subsection"]
             )
         ]
 
         self.save_url_to(
-            self.context['cover'], os.path.join(tempdir, 'cover.jpg')
+            self.context["cover"], os.path.join(tempdir, "cover.jpg")
         )
 
-        for x in ('index.html', 'toc.html', 'style.css'):
+        for x in ("index.html", "toc.html", "style.css"):
             val = env.get_template(x).render(**self.context)
-            with open(os.path.join(tempdir, x), 'w') as f:
+            with open(os.path.join(tempdir, x), "w") as f:
                 f.write(val)
 
         # Download article images
-        for x in self.context['articles']:
-            if x['image'] is None:
+        for x in self.context["articles"]:
+            if x["image"] is None:
                 continue
 
-            target = os.path.join(tempdir, '{}.jpg'.format(x['idx']))
-            self.save_url_to(x['image'], target)
+            target = os.path.join(tempdir, "{}.jpg".format(x["idx"]))
+            self.save_url_to(x["image"], target)
 
         # Hide kindlegen output by default
         stdout, stderr = subprocess.PIPE, subprocess.PIPE
@@ -309,25 +317,25 @@ class SpectatorToMobi:
 
         subprocess.call(
             (
-                'kindlegen/kindlegen',
-                '-verbose',
-                os.path.join(tempdir, 'index.html'),
+                "kindlegen/kindlegen",
+                "-verbose",
+                os.path.join(tempdir, "index.html"),
             ),
             stdout=stdout,
             stderr=stderr,
         )
 
         if not self.filename:
-            self.filename = 'The_Spectator_{}.mobi'.format(
-                self.context['date'].replace(' ', '_')
+            self.filename = "The_Spectator_{}.mobi".format(
+                self.context["date"].replace(" ", "_")
             )
 
         self.log.info("Saving output to %s", self.filename)
 
-        shutil.move(os.path.join(tempdir, 'index.mobi'), self.filename)
+        shutil.move(os.path.join(tempdir, "index.mobi"), self.filename)
 
     def parse(self, url, **kwargs):
-        url = 'https://cdn.contentstack.io/v3{}'.format(url)
+        url = "https://cdn.contentstack.io/v3{}".format(url)
 
         self._parsed = self.get(url, **kwargs).json()
 
@@ -335,38 +343,38 @@ class SpectatorToMobi:
 
     def get(self, url, **kwargs):
         kwargs.update(
-            {'api_key': self.api_key, 'access_token': self.access_token}
+            {"api_key": self.api_key, "access_token": self.access_token}
         )
 
         h = hashlib.sha1()
-        h.update(url.encode('utf-8'))
+        h.update(url.encode("utf-8"))
         for k, v in kwargs.items():
-            h.update(k.encode('utf-8'))
-            h.update(v.encode('utf-8'))
+            h.update(k.encode("utf-8"))
+            h.update(v.encode("utf-8"))
 
         filename = os.path.join(
-            save_cache_path('spectator-to-mobi'), h.hexdigest()
+            save_cache_path("spectator-to-mobi"), h.hexdigest()
         )
 
         if (
             os.path.exists(filename)
             and os.path.getmtime(filename) > self.epoch
         ):
-            with open(filename, 'rb') as f:
+            with open(filename, "rb") as f:
                 return pickle.load(f)
 
         response = self.session.get(
-            url, headers={'User-agent': 'Mozilla/5.0'}, params=kwargs
+            url, headers={"User-agent": "Mozilla/5.0"}, params=kwargs
         )
         response.raise_for_status()
 
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             pickle.dump(response, f)
 
         return response
 
     def save_url_to(self, url, target):
-        with open(target, 'wb') as f:
+        with open(target, "wb") as f:
             for x in self.get(url).iter_content(chunk_size=128):
                 f.write(x)
 
@@ -380,7 +388,7 @@ class SpectatorToMobi:
 
         handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(
-            logging.Formatter('%(asctime).19s %(levelname).1s %(message)s')
+            logging.Formatter("%(asctime).19s %(levelname).1s %(message)s")
         )
         self.log.addHandler(handler)
 
@@ -400,5 +408,5 @@ class SpectatorToMobi:
         return list(self.json_find(needle, haystack))[0]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
