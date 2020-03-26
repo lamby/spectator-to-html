@@ -221,7 +221,7 @@ class SpectatorToMobi:
 
         try:
             if CONFIG_BY_NAME[subsection]["exclude"]:
-                pass
+                return
         except KeyError:
             pass
 
