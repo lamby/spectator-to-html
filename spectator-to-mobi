@@ -146,7 +146,11 @@ class SpectatorToMobi:
         finally:
             if self.keep_html:
                 self.log.info("Keeping HTML in %s/index.html", t)
-                subprocess.call(("xdg-open", "{}/index.html".format(t)))
+                self.log.debug("Opening %s/index.html with xdg-open", t)
+                try:
+                    subprocess.call(("xdg-open", "{}/index.html".format(t)))
+                except FileNotFoundError:
+                    pass
             else:
                 shutil.rmtree(t, ignore_errors=True)
 
@@ -293,7 +297,7 @@ class SpectatorToMobi:
             )
         ]
 
-        self.save_url_to(
+        self.save_image_to(
             self.context["cover"], os.path.join(tempdir, "cover.jpg")
         )
 
@@ -308,7 +312,7 @@ class SpectatorToMobi:
                 continue
 
             target = os.path.join(tempdir, "{}.jpg".format(x["idx"]))
-            self.save_url_to(x["image"], target)
+            self.save_image_to(x["image"], target)
 
         # Hide kindlegen output by default
         stdout, stderr = subprocess.PIPE, subprocess.PIPE
@@ -373,10 +377,30 @@ class SpectatorToMobi:
 
         return response
 
-    def save_url_to(self, url, target):
+    def save_image_to(self, url, target):
+        self.log.debug("Downloading %s to %s", url, target)
+
         with open(target, "wb") as f:
             for x in self.get(url).iter_content(chunk_size=128):
                 f.write(x)
+
+        self.log.debug("Resizing and resampling %s", target)
+        subprocess.check_call(
+            (
+                "convert",
+                target,
+                "-resize",
+                "800x",
+                "-set",
+                "colorspace",
+                "Gray",
+                "-separate",
+                "-average",
+                "-quality",
+                "60%",
+                target,
+            )
+        )
 
     def setup_logging(self):
         self.log = logging.getLogger()
