@@ -201,6 +201,8 @@ class SpectatorToMobi:
         title = title.replace("{}: ".format(author), "")
 
         byline = data["byline"]
+        byline = byline.replace(", says {}".format(author), ".")
+
         subsection = data["magazine_content_production_only"][
             "magazine_subsection"
         ][0]["title"]
