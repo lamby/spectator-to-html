@@ -39,7 +39,7 @@ CONFIG = (
     {"name": "Real life"},
     {"name": "High life"},
     {"name": "Low life"},
-    {"name": "Radio", "exclude": True},
+    {"name": "Radio"},
     {"name": "Television"},
     {"name": "Cinema"},
     {"name": "Spectator Sport"},
