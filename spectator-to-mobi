@@ -219,6 +219,8 @@ class SpectatorToMobi:
         # Rewrite first
         if subsection.startswith("More from "):
             subsection = subsection[10:]
+        if subsection.startswith("More features"):
+            subsection = "Features"
         if subsection == "Lead book review":
             subsection = "Books"
         if subsection == "Notes on...":
