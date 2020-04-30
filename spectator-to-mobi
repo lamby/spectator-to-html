@@ -42,6 +42,7 @@ CONFIG = (
     {"name": "Radio"},
     {"name": "Television"},
     {"name": "Cinema"},
+    {"name": "Film"},
     {"name": "Spectator Sport"},
     {"name": "No sacred cows"},
     {"name": "The Wiki Man"},
